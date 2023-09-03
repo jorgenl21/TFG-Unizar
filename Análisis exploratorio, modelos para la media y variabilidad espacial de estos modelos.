@@ -1,0 +1,624 @@
+S1<- (sin(2*pi*Tmax_peninsula$dia.global/365))
+C1 <- cos(2*pi*Tmax_peninsula$dia.global/365)
+S2 <- sin(4*pi*Tmax_peninsula$dia.global/365)
+C2 <- cos(4*pi*Tmax_peninsula$dia.global/365)
+S3 <- sin(6*pi*Tmax_peninsula$dia.global/365)
+C3 <- cos(6*pi*Tmax_peninsula$dia.global/365)
+S4 <- sin(8*pi*Tmax_peninsula$dia.global/365)
+C4 <- cos(8*pi*Tmax_peninsula$dia.global/365)
+
+
+length(Tmax_peninsula$year[Tmax_peninsula$year<2023])
+listamodelos <- list()
+(111-3)/2
+aux <- seq(4,110,by=2)
+for(i in aux) listamodelos[[(1/2)*i - 1]] <-  lm(Tmax_peninsula[,i] ~ c(NA,(Tmax_peninsula[,i])[c(1:24836)])*(S1+C1 + S2 + C2) + c(NA,NA,(Tmax_peninsula[,i])[c(1:24835)])*(S1+C1 + S2 + C2)+Tmax_peninsula$year*(S1+C1 + S2 + C2))
+listasummarys <- list()
+#Nueva version
+for(ipueblo in aux){ 
+  n <- 24837
+  aux.y<- (Tmax_peninsula[,ipueblo])[c(1:24837)]
+  aux.y.lag1 <- c(NA,aux.y[c(1:24836)])
+  aux.y.lag2 <- c(NA,aux.y.lag1[c(1:24836)])
+  aux.s1 <- S1 [c(1:24837)]
+  aux.s2 <- S2[c(1:n)]
+  aux.c1 <- C1[c(1:n)]
+  aux.c2<- C2[c(1:n)]
+  aux.year <- Tmax_peninsula$year[c(1:n)]
+  listamodelos[[(1/2)*ipueblo - 1]] <-  lm(aux.y ~ aux.y.lag1*(aux.c1 + aux.c2 + aux.s1 + aux.s2) + aux.y.lag2*(aux.c1 + aux.c2 + aux.s1 + aux.s2)+aux.year*(aux.c1 + aux.c2 + aux.s1 + aux.s2))
+}# End for
+#Continuo
+nombre <- NULL
+Rcuadrado.geo <- NULL
+Rcuadrado <- NULL
+cv <- NULL
+coefficients(listamodelos[[1]])[2]
+intercept <- NULL
+for(i in c(1:54)) intercept[i] <- coefficients(listamodelos[[i]])[1]
+into <- lm(intercept ~ HGHT + LON , data=Tmax_peninsula_geo)
+summary(into)
+resettest(into)
+into2 <- lm(intercept ~  LON + poly(Qver,2)  , data=Tmax_peninsula_geo)
+summary(into2)
+resettest(into2)
+nombre
+
+ddddddd <- c('Intercepto',0.2291,0.329,mean(intercept)/sd(intercept),sum(valores_p[1,] > 0.05))
+my_dataframe <- rbind(ddddddd, data.modelos)
+cof.ant <- NULL
+for(i in c(1:54)) cof.ant[i] <- coefficients(listamodelos[[i]])[2]
+plot(log(Tmax_peninsula_geo$HGHT),cof.ant)#V
+plot(Tmax_peninsula_geo$LON,cof.ant)
+summary(lm(cof.ant ~ log(Tmax_peninsula_geo$HGHT) * Tmax_peninsula_geo$LAT * Tmax_peninsula_geo$LON)) #Si añado invierno y verano obtengo 0,9 pero claro de un lugar igual no tengo esa info y si multplico todas 0.92
+#Quito el logaritmo y obtengo 0.7403, añado verano e invierno y obtengo un 0.89, las Q no aportan
+#####
+nombre[1] <- 'Día anterior'
+Rcuadrado.geo[1] <- 0.7403
+Rcuadrado[1] <- 0.89
+cv[1] <- mean(cof.ant)/sd(cof.ant)
+pval <- NULL
+pval[1] <- sum(valores_p[2,] > 0.05)
+abs(cof.ant)[2]
+colores <- colorRampPalette(c("blue", "white", "red"))(length(cof.ant))
+colores_datos <- colores[rank(abs(cof.ant))]
+map('world', xlim=c(-10,5), ylim=c(35.8,43.5), interior=F)
+abline(h=c(35:45), v=c(-10:10), lty=3)
+points(Tmax_peninsula_geo$LON,Tmax_peninsula_geo$LAT,pch=16,col=colores_datos)
+
+valores_p <- matrix(NA,nrow=20,ncol=54)
+for(i in c(1:54)) valores_p[,i] <- summary(listamodelos[[i]])$coefficients[, "Pr(>|t|)"]
+plot(valores_p[2,],rep(1,length(valores_p[2,])),ylim=c(0,21),xlim=c(0,1))
+abline(v=0.05,col='red')
+abline(v=0.25,col='blue')
+for(i in c(3:20)) points(valores_p[i,],rep((i-1),length(valores_p[i,])))
+#Vemos que la hipotesis nula no se rechaza en todos los coeficientes, y en algunos pasa menos que en otros
+max(valores_p[2,]) #En todos rechazamos la hipotesis nula que el coeficiente del dia anterior sea nulo
+
+max(valores_p[7,]) #EN DOS DIAS MENOS NO
+
+
+map('world', xlim=c(-10,5), ylim=c(35.8,43.5), interior=F)
+abline(h=c(35:45), v=c(-10:10), lty=3)
+points(Tmax_peninsula_geo$LON[valores_p[7,]>0.05],Tmax_peninsula_geo$LAT[valores_p[7,]>0.05],pch=16,col='red')
+
+#Comparandolo con el valor de los coeficientes de dos dias menos, obtenemos que en los más cercanos a 0 se encuentran los que no rechazamos la hip nula
+
+#Veamos ahora con la variable year
+cof.year <- NULL
+for(i in c(1:54)) cof.year[i] <- coefficients(listamodelos[[i]])[8]
+
+modelo.cofyear <- lm(cof.year ~ LON+Qver,data=Tmax_peninsula_geo)
+summary(modelo.cofyear)
+resettest(modelo.cofyear)
+
+nombre[7] <- 'Coeficiente año'
+cv[7] <- mean(cof.year)/sd(cof.year)
+Rcuadrado[7]<-0.2091
+Rcuadrado.geo[7]<-0.1211 
+pval[7] <- sum(valores_p[8,]>0.05)
+
+
+x1 <-Tmax_peninsula_geo$HGHT
+x2 <- Tmax_peninsula_geo$LAT
+x3 <- Tmax_peninsula_geo$LON
+plot(log(Tmax_peninsula_geo$HGHT),cof.year)
+summary(lm(cof.year~ x1+x2+x3+Tmax_peninsula_geo$verano+Tmax_peninsula_geo$invierno+Tmax_peninsula_geo$Qver+Tmax_peninsula_geo$Qinv) )
+dim(Tmax_peninsula_geo)
+correlaciones <- NULL
+
+for(i in c(1:7)) correlaciones[i] <-cor(cof.year,Tmax_peninsula_geo[,i+3])
+correlaciones
+
+
+install.packages("compiler")
+install.packages("tools")
+
+options(repos = "https://cloud.r-project.org")
+install.packages("mvtnorm")
+RStudio.Version()$version
+install.Rtools()
+
+install.packages("Rtools")
+library(bamlss)
+install.packages('usethis')
+
+resettest(lm(cof.year~ x3))
+100*length((valores_p[8,])[valores_p[8,]>0.05])/length(valores_p[8,]) #Solo el 1.8% no es rechazada la nulidad del coeficiente del año
+
+modelo<- lm(cof.year~ log(x1)*(poly(x2,20)))
+predict.lm(modelo,c(657,42.4778))
+resettest(lm(cof.year~ x2))
+
+resettest(lm(cof.year~ log(Tmax_peninsula_geo$HGHT) * (poly(x2,9) + poly(x3,2))))
+
+lobera <- data.frame(x1=c(657), x2= c(42.4778))
+
+predict(modelo,newdata = lobera,interval='confidence')
+
+
+library('maps')
+colores <- colorRampPalette(c("blue", "white", "red"))(length(cof.2ant))
+colores_datos <- colores[rank((cof.2ant))]
+map('world', xlim=c(-10,5), ylim=c(35.8,43.5), interior=F)
+abline(h=c(35:45), v=c(-10:10), lty=3)
+points(Tmax_peninsula_geo$LON,Tmax_peninsula_geo$LAT,pch=16,col=colores_datos)
+
+plot(log(Tmax_peninsula_geo$HGHT),cof.year)
+
+
+mean(cof.year)/sqrt(var(cof.year))
+mean(cof.ant)/sqrt(var(cof.ant))
+mean(cof.2ant)/sqrt(var(cof.2ant))
+
+
+
+
+
+norech <- NULL
+for (i in c(1:20)) norech[i] <- sum(valores_p[i,]>0.05)
+norech[7]
+posic1 <- (c(1:54)[valores_p[7,]>0.05 & valores_p[7,]<0.20 ])
+posic2 <- (c(1:54)[valores_p[7,]>0.20 ])
+posic3 <- (c(1:54)[valores_p[7,]<0.05 ])
+map('world', xlim=c(-10,5), ylim=c(35.8,43.5), interior=F)
+abline(h=c(35:45), v=c(-10:10), lty=3)
+points(Tmax_peninsula_geo$LON,Tmax_peninsula_geo$LAT,pch=16)
+points(Tmax_peninsula_geo$LON[posic1],Tmax_peninsula_geo$LAT[posic1],pch=16,col='blue') 
+points(Tmax_peninsula_geo$LON[posic2],Tmax_peninsula_geo$LAT[posic2],pch=16,col='red') 
+points(Tmax_peninsula_geo$LON[posic3],Tmax_peninsula_geo$LAT[posic3],pch=16,col='green') 
+(valores_p[7,])[valores_p[7,]>0.05]
+summary(lm(valores_p[7,] ~ log(Tmax_peninsula_geo$HGHT) * Tmax_peninsula_geo$LAT * Tmax_peninsula_geo$LON + Tmax_peninsula_geo$verano + Tmax_peninsula_geo$invierno + Tmax_peninsula_geo$Qver + Tmax_peninsula_geo$Qinv))
+
+mont <- log(Tmax_peninsula_geo$HGHT)
+
+cof.2ant <- NULL
+for(i in c(1:54)) cof.2ant[i] <- coefficients(listamodelos[[i]])[7]
+modelo.cof2ant <- lm(cof.2ant ~ poly(LON,2)+log(HGHT)+poly(verano,5)[,c(1,4,5)]+log(Qinv),data=Tmax_peninsula_geo)
+summary(modelo.cof2ant)
+resettest(modelo.cof2ant)
+
+
+nombre[6] <- 'Dos días atrás'
+cv[6] <- mean(cof.2ant)/sd(cof.2ant)
+Rcuadrado[6]<-0.943
+Rcuadrado.geo[6]<-0.8624 
+pval[6] <- sum(valores_p[7,]>0.05)
+
+
+plot(Tmax_peninsula_geo$HGHT,cof.2ant)
+lines(sort(Tmax_peninsula_geo$HGHT),(lm(cof.2ant ~  poly(Tmax_peninsula_geo$HGHT,2) ))$fit[order(Tmax_peninsula_geo$HGHT)])
+summary(lm(cof.2ant ~ mont + (Tmax_peninsula_geo$LON) )) #SI METO QVER ME SUBE HASTA 0.9 pero estamos en las mismas que antes
+
+colores <- colorRampPalette(c("blue", "white", "red"))(length(cof.2ant))
+colores_datos <- colores[rank(abs(cof.2ant))]
+map('world', xlim=c(-10,5), ylim=c(35.8,43.5), interior=F)
+abline(h=c(35:45), v=c(-10:10), lty=3)
+points(Tmax_peninsula_geo$LON,Tmax_peninsula_geo$LAT,pch=16,col=colores_datos)
+
+colores <- colorRampPalette(c("blue", "white", "red"))(length(Tmax_peninsula_geo$HGHT))
+colores_datos <- colores[rank(Tmax_peninsula_geo$HGHT)]
+map('world', xlim=c(-10,5), ylim=c(35.8,43.5), interior=F)
+abline(h=c(35:45), v=c(-10:10), lty=3)
+points(Tmax_peninsula_geo$LON,Tmax_peninsula_geo$LAT,pch=16,col=colores_datos)
+####
+for(i in c(1:54)) listasummarys[[i]] <- summary(listamodelos[[i]])
+r.squareds <- NULL
+order(c(1,3,4,2,7))
+for(i in c(1:54)) r.squareds[i] <- listasummarys[[i]]$adj.r.squared
+mean(r.squareds)
+plot(Tmax_peninsula_geo$LAT,r.squareds)
+summary(lm(r.squareds ~ poly(Tmax_peninsula_geo$LAT,2)  + Tmax_peninsula_geo$verano + Tmax_peninsula_geo$invierno))
+
+colores <- colorRampPalette(c("blue", "white", "red"))(length(r.squareds))
+colores_datos <- colores[rank(abs(r.squareds))]
+map('world', xlim=c(-10,5), ylim=c(35.8,43.5), interior=F)
+abline(h=c(35:45), v=c(-10:10), lty=3)
+points(Tmax_peninsula_geo$LON,Tmax_peninsula_geo$LAT,pch=16,col=colores_datos)
+
+cof.c1 <- NULL
+for(i in c(1:54)) cof.c1[i] <- coefficients(listamodelos[[i]])[3]
+
+colores <- colorRampPalette(c("blue", "white", "red"))(length(cof.c1))
+colores_datos <- colores[rank( cof.c1)]
+map('world', xlim=c(-10,5), ylim=c(35.8,43.5), interior=F)
+abline(h=c(35:45), v=c(-10:10), lty=3)
+points(Tmax_peninsula_geo$LON,Tmax_peninsula_geo$LAT,pch=16,col=colores_datos)
+
+modelo.c1 <- lm(cof.c1 ~LON ,data=Tmax_peninsula_geo )
+summary(modelo.c1)
+resettest(modelo.c1)
+
+modelo.c1.2 <- lm(cof.c1 ~LON ,data=Tmax_peninsula_geo )
+summary(modelo.c1.2)
+resettest(modelo.c1.2)
+
+nombre[2] <- 'c1'
+cv[2] <- mean(cof.c1)/sd(cof.c1)
+Rcuadrado[2]<-0.115
+Rcuadrado.geo[2]<-0.115
+pval[2] <- sum(valores_p[3,]>0.05)
+
+summary(cof.year)
+correlaciones <- NULL
+
+for(i in c(1:7)) correlaciones[i] <-cor(cof.c2,Tmax_peninsula_geo[,i+3])
+correlaciones
+
+cof.c2 <- NULL
+for(i in c(1:54)) cof.c2[i] <- coefficients(listamodelos[[i]])[4]
+
+colores <- colorRampPalette(c("blue", "white", "red"))(length(cof.c2))
+colores_datos <- colores[rank( cof.c2)]
+map('world', xlim=c(-10,5), ylim=c(35.8,43.5), interior=F)
+abline(h=c(35:45), v=c(-10:10), lty=3)
+points(Tmax_peninsula_geo$LON,Tmax_peninsula_geo$LAT,pch=16,col=colores_datos)
+
+var(cof.c2)
+((coef(modelo.c2)[-1])[11])[1]
+modelo.c2 <-lm(cof.c2 ~Tmax_peninsula_geo$LAT+(poly(Tmax_peninsula_geo$LON,3)[,c(2)]))
+summary(modelo.c2)
+modelo.c22 <- lm(cof.c2~Tmax_peninsula_geo$LAT+(poly(Tmax_peninsula_geo$LON,3)[,c(2)])+Tmax_peninsula_geo$Qinv)
+summary(modelo.c22)
+
+resettest(modelo.c22)
+
+summary(listamodelos[[1]])
+
+nombre[3] <- 'c2'
+cv[3] <- mean(cof.c2)/sd(cof.c2)
+Rcuadrado[3]<-0.2949
+Rcuadrado.geo[3]<-0.2949 
+pval[3] <- sum(valores_p[4,]>0.05)
+#######
+cof.s1 <- NULL
+for(i in c(1:54)) cof.s1[i] <- coefficients(listamodelos[[i]])[5]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.s1,Tmax_peninsula_geo[,i+3])
+correlaciones
+
+resettest(lm(cof.s1~log(Tmax_peninsula_geo$HGHT)))
+modelo.s1 <- lm(cof.s1~  Tmax_peninsula_geo$LON*log(Tmax_peninsula_geo$HGHT))
+summary(modelo.s1)
+
+resettest(lm(cof.s1~Tmax_peninsula_geo$LAT))
+modelo.s1.2 <- lm(cof.s1~ Tmax_peninsula_geo$LON*log(Tmax_peninsula_geo$HGHT)+Tmax_peninsula_geo$Qver:Tmax_peninsula_geo$Qinv)
+summary(modelo.s1.2)
+resettest(modelo.s1.2)
+nombre[4] <- 's1'
+cv[4] <- mean(cof.s1)/sd(cof.s1)
+Rcuadrado[4]<-0.3882
+Rcuadrado.geo[4]<-0.3882 
+pval[4] <- sum(valores_p[5,]>0.05)
+#########
+cof.s2 <- NULL
+for(i in c(1:54)) cof.s2[i] <- coefficients(listamodelos[[i]])[6]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.s2,Tmax_peninsula_geo[,i+3])
+correlaciones
+resettest(lm(cof.s2~log(Tmax_peninsula_geo$invierno)))
+modelo.s2 <- lm(cof.s2~poly(Tmax_peninsula_geo$LAT,3)+ poly(Tmax_peninsula_geo$LON,2))
+summary(modelo.s2)
+modelo.s2.2 <- lm(cof.s2 ~ poly(Tmax_peninsula_geo$LAT,3) + poly(Tmax_peninsula_geo$LON,2) + Tmax_peninsula_geo$invierno* Tmax_peninsula_geo$Qver*poly(Tmax_peninsula_geo$LAT,2)*poly(Tmax_peninsula_geo$LON,2) )
+summary(modelo.s2.2)
+mean(cof.s2)
+var(cof.s2)
+
+
+nombre[5] <- 's2'
+cv[5] <- mean(cof.s2)/sd(cof.s2)
+Rcuadrado[5]<-0.8714
+Rcuadrado.geo[5]<-0.592 
+pval[5] <- sum(valores_p[6,]>0.05)
+
+
+summary(lm(cof.s2~poly(Tmax_peninsula_geo$LAT,3)[,c(2,3)]+ poly(Tmax_peninsula_geo$LON,2)  +Tmax_peninsula_geo$invierno:(Tmax_peninsula_geo$Qinv)))#Yo lo dejaria igual que sin las temperaturas
+
+
+
+#####
+
+
+######
+listamodelos[[1]]
+#aux.y.lag1:aux.c1
+cof.lag1.c1 <- NULL
+for(i in c(1:54)) cof.lag1.c1[i] <- coefficients(listamodelos[[i]])[9]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.lag1.c1,Tmax_peninsula_geo[,i+3])
+correlaciones
+
+sum(valores_p[,9]>0.05)/length(valores_p[,9])
+var(valores_p[,9])
+
+mean(cof.lag1.c1)
+var(cof.lag1.c1)
+plot(Tmax_peninsula_geo$HGHT, cof.lag1.c1)
+
+map('world', xlim=c(-10,5), ylim=c(35.8,43.5), interior=F)
+abline(h=c(35:45), v=c(-10:10), lty=3)
+points(Tmax_peninsula_geo$LON,Tmax_peninsula_geo$LAT,pch=16)
+points(Tmax_peninsula_geo$LON[valores_p[,9]>0.05],Tmax_peninsula_geo$LAT[valores_p[,9]>0.05],pch=16,col='red')
+points(Tmax_peninsula_geo$LON[valores_p[,9]>0.20],Tmax_peninsula_geo$LAT[valores_p[,9]>0.20],pch=16,col='blue')
+
+modelo.cof.lag1.c1 <- lm(cof.lag1.c1 ~+log(Tmax_peninsula_geo$HGHT):Tmax_peninsula_geo$LON*poly(Tmax_peninsula_geo$LAT,2)[,1]+poly(Tmax_peninsula_geo$LAT,2))
+summary(modelo.cof.lag1.c1)
+
+modelo.cof.lag1.c1.2 <- lm(cof.lag1.c1~poly(Tmax_peninsula_geo$Qver,3)+log(Tmax_peninsula_geo$HGHT):Tmax_peninsula_geo$LON+poly(Tmax_peninsula_geo$LAT,2)+Tmax_peninsula_geo$verano)
+resettest(modelo.cof.lag1.c1.2)
+summary(modelo.cof.lag1.c1.2)
+
+nombre[8] <- 'Dia anterior C1'
+cv[8] <- mean(cof.lag1.c1)/sd(cof.lag1.c1)
+Rcuadrado[8]<-0.8928
+Rcuadrado.geo[8]<-0.7716 
+pval[8] <- sum(valores_p[9,]>0.05)
+
+#######
+cof.lag1.c2 <- NULL
+for(i in c(1:54)) cof.lag1.c2[i] <- coefficients(listamodelos[[i]])[10]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.lag1.c2,Tmax_peninsula_geo[,i+3])
+correlaciones
+
+modelo.cof.lag1.c2 <- lm(cof.lag1.c2~poly(Tmax_peninsula_geo$LON,2)+poly(Tmax_peninsula_geo$LON, 2)[,2]:log(Tmax_peninsula_geo$HGHT))
+summary(modelo.cof.lag1.c2)
+resettest(modelo.cof.lag1.c2)
+
+modelo.cof.lag1.c2.2 <- lm(cof.lag1.c2~poly(Tmax_peninsula_geo$LON,2)+Tmax_peninsula_geo$Qver)
+summary(modelo.cof.lag1.c2.2)
+resettest(modelo.cof.lag1.c2.2)
+
+
+nombre[9] <- 'Dia anterior C2'
+cv[9] <- mean(cof.lag1.c2)/sd(cof.lag1.c2)
+Rcuadrado[9]<-0.7609
+Rcuadrado.geo[9]<-0.7624 
+pval[9] <- sum(valores_p[10,]>0.05)
+#######11 El efecto del dia anterior en funcion si es primavera(1) otoño(-1) en verano e invierno más pequeño
+cof.lag1.s1 <- NULL
+for(i in c(1:54)) cof.lag1.s1[i] <- coefficients(listamodelos[[i]])[11]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.lag1.s1,Tmax_peninsula_geo[,i+3])
+correlaciones
+mean(cof.lag1.s1)
+var(cof.lag1.s1)
+plot(Tmax_peninsula_geo$HGHT,cof.lag1.s1)
+mean(valores_p[11,])
+var(valores_p[11,])
+s <-c(1:365)
+sx <- sin(2*pi*s/365)
+plot(s,sx,'l')
+
+modelo.cof.lag1.s1 <- lm(cof.lag1.s1~ poly(Tmax_peninsula_geo$LON,3)[,c(3)]*poly(Tmax_peninsula_geo$LAT,2)[,2]+poly(Tmax_peninsula_geo$LAT,2))
+summary(modelo.cof.lag1.s1)
+resettest(modelo.cof.lag1.s1)
+
+modelo.cof.lag1.s1.2 <- lm(cof.lag1.s1~  poly(Tmax_peninsula_geo$Qver,2)[,2]+ poly(Tmax_peninsula_geo$LON,3)[,c(3)]+poly(Tmax_peninsula_geo$LAT,2)[,2]+poly(Tmax_peninsula_geo$LAT,2)[,2])
+summary(modelo.cof.lag1.s1.2)
+resettest(modelo.cof.lag1.s1.2)
+
+
+nombre[10] <- 'Dia anterior S1'
+cv[10] <- mean(cof.lag1.s1)/sd(cof.lag1.s1)
+Rcuadrado[10]<-0.4403 
+Rcuadrado.geo[10]<-0.4205 
+pval[10] <- sum(valores_p[11,]>0.05)
+##### 
+cof.lag1.s2 <- NULL
+for(i in c(1:54)) cof.lag1.s2[i] <- coefficients(listamodelos[[i]])[12]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.lag1.s2,Tmax_peninsula_geo[,i+3])
+correlaciones
+
+mean(cof.lag1.s2)
+var(cof.lag1.s2)
+plot(log(Tmax_peninsula_geo$HGHT),cof.lag1.s2)
+mean(valores_p[12,])
+var(valores_p[12,])
+sum(valores_p[12,]>0.05)
+
+modelo.cof.lag1.s2 <- lm(cof.lag1.s2~ poly(Tmax_peninsula_geo$HGHT,2)[,2]+poly(Tmax_peninsula_geo$LON,3)[,c(2,3)]+poly(Tmax_peninsula_geo$LAT,2)[,2])
+summary(modelo.cof.lag1.s2)
+resettest(modelo.cof.lag1.s2)
+
+modelo.cof.lag1.s2.2 <- lm(cof.lag1.s2~+poly(Tmax_peninsula_geo$LAT, 2)[, 2]+poly(Tmax_peninsula_geo$LON, 3)[, c(2,3)]) #NO CAMBIA SI AÑADIMOS LAS CLIMATICAS
+summary(modelo.cof.lag1.s2.2)
+resettest(modelo.cof.lag1.s2.2)
+
+nombre[11] <- 'Dia anterior S2'
+cv[11] <- mean(cof.lag1.s2)/sd(cof.lag1.s2)
+Rcuadrado[11]<-0.6319 
+Rcuadrado.geo[11]<-0.6319 
+pval[11] <- sum(valores_p[12,]>0.05)
+####Yo lo consideraria nulo, preguntar por si acaso
+cof.lag2.c1 <- NULL
+for(i in c(1:54)) cof.lag2.c1[i] <- coefficients(listamodelos[[i]])[13]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.lag2.c1,Tmax_peninsula_geo[,i+3])
+correlaciones
+modelo.cof.lag2.c1 <- lm( cof.lag2.c1 ~ Tmax_peninsula_geo$LON+log(Tmax_peninsula_geo$HGHT)+poly(Tmax_peninsula_geo$LAT,3))
+summary(modelo.cof.lag2.c1)
+resettest(modelo.cof.lag2.c1)
+
+modelo.cof.lag2.c1.2 <- lm( cof.lag2.c1~ poly(Tmax_peninsula_geo$Qver,3)[,c(1)]+Tmax_peninsula_geo$verano+Tmax_peninsula_geo$LON)
+summary(modelo.cof.lag2.c1.2)
+resettest(modelo.cof.lag2.c1.2) 
+
+nombre[12] <- 'Dos dias c1'
+cv[12] <- mean(cof.lag2.c1)/sd(cof.lag2.c1)
+Rcuadrado[12]<-0.9368  
+Rcuadrado.geo[12]<-0.8342 
+pval[12] <- sum(valores_p[13,]>0.05)
+#####
+cof.lag2.c2 <- NULL
+for(i in c(1:54)) cof.lag2.c2[i] <- coefficients(listamodelos[[i]])[14]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.lag2.c2,Tmax_peninsula_geo[,i+3])
+correlaciones
+
+min(cof.lag2.c2)
+max(cof.lag2.c2)
+var(cof.lag2.c2)
+sum(valores_p[14,]>0.05) #No hay muchos pero vemos que es practicamente nulo el coeficiente
+var(valores_p[14,])
+plot(Tmax_peninsula_geo$HGHT,cof.lag2.c2)
+modelo.cof.lag2.c2 <- lm( cof.lag2.c2~poly(Tmax_peninsula_geo$LON,2)+poly(Tmax_peninsula_geo$LAT,4)[,c(2,4)]+log(Tmax_peninsula_geo$HGHT))
+colnames(Tmax_peninsula_geo)
+summary(modelo.cof.lag2.c2)
+install.packages('lmtest')
+library('lmtest')
+resettest(modelo.cof.lag2.c2)
+
+modelo.cof.lag2.c2.2 <- lm(cof.lag2.c2 ~ poly(Qver,7)[,-c(4,6,7,2,3)]+poly(LON,1)+poly(LAT,4)[,c(3)]+log(HGHT), data=Tmax_peninsula_geo)
+summary(modelo.cof.lag2.c2.2)
+resettest(modelo.cof.lag2.c2.2)
+
+
+nombre[13] <- 'Dos dias c2'
+cv[13] <- mean(cof.lag2.c2)/sd(cof.lag2.c2)
+Rcuadrado[13]<-0.6534  
+Rcuadrado.geo[13]<-0.5879 
+pval[13] <- sum(valores_p[14,]>0.05)
+
+
+coefficients(listamodelos[[1]])[16] #15
+
+cof.lag2.s1 <- NULL
+for(i in c(1:54)) cof.lag2.s1[i] <- coefficients(listamodelos[[i]])[15]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.lag2.s1,Tmax_peninsula_geo[,i+3])
+correlaciones
+
+modelo.cof.lag2.s1 <- lm(cof.lag2.s1 ~ log(HGHT)+LON +LON:LAT,data = Tmax_peninsula_geo)
+summary(modelo.cof.lag2.s1)
+resettest(modelo.cof.lag2.s1)
+
+modelo.cof.lag2.s1.2 <- lm(cof.lag2.s1~ Qver*LAT,data=Tmax_peninsula_geo)
+summary(modelo.cof.lag2.s1.2)
+resettest(modelo.cof.lag2.s1.2)
+
+
+nombre[14] <- 'Dos dias s1'
+cv[14] <- mean(cof.lag2.s1)/sd(cof.lag2.s1)
+Rcuadrado[14]<-0.5814  
+Rcuadrado.geo[14]<-0.4803 
+pval[14] <- sum(valores_p[15,]>0.05)
+
+
+mean(cof.lag2.s1)
+var(cof.lag2.s1)
+mean(valores_p[15,])
+plot(valores_p[15,],rep(1,length(valores_p[15,])))
+
+cof.lag2.s2 <- NULL
+for(i in c(1:54)) cof.lag2.s2[i] <- coefficients(listamodelos[[i]])[16]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.lag2.s2,Tmax_peninsula_geo[,i+3])
+correlaciones
+modelo.cof.lag2.s2 <- lm(cof.lag2.s2~poly(log(HGHT),3)[,c(1,3)]+LAT+LON,data=Tmax_peninsula_geo)
+summary(modelo.cof.lag2.s2)
+resettest(modelo.cof.lag2.s2)
+
+modelo.cof.lag2.s2.2 <- lm(cof.lag2.s2~log(verano)+Qver+invierno*Qinv+log(HGHT),data= Tmax_peninsula_geo)
+summary(modelo.cof.lag2.s2.2)
+resettest(modelo.cof.lag2.s2.2)
+
+
+nombre[15] <- 'Dos dias s2'
+cv[15] <- mean(cof.lag2.s2)/sd(cof.lag2.s2)
+Rcuadrado[15]<-0.6919   
+Rcuadrado.geo[15]<-0.3839  
+pval[15] <- sum(valores_p[16,]>0.05)
+
+
+coefficients(listamodelos[[1]])[17]
+
+
+cof.y.c1 <- NULL
+for(i in c(1:54)) cof.y.c1[i] <- coefficients(listamodelos[[i]])[17]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.y.c1,Tmax_peninsula_geo[,i+3])
+correlaciones
+
+modelo.cof.y.c1 <- lm(cof.y.c1 ~ LON  , data= Tmax_peninsula_geo)
+summary(modelo.cof.y.c1)
+resettest(modelo.cof.y.c1)
+
+modelo.cof.y.c1.2 <- lm(cof.y.c1~poly(verano,2)[,2]+Qinv+ invierno,data=Tmax_peninsula_geo)
+summary(modelo.cof.y.c1.2)
+resettest(modelo.cof.y.c1.2)
+
+mean(cof.y.c1)/sd(cof.y.c1)
+
+
+nombre[16] <- 'Año C1'
+cv[16] <- mean(cof.y.c1)/sd(cof.y.c1)
+Rcuadrado[16]<-0.1291   
+Rcuadrado.geo[16]<-0.1127  
+pval[16] <- sum(valores_p[17,]>0.05)
+
+
+cof.y.c2 <- NULL
+for(i in c(1:54)) cof.y.c2[i] <- coefficients(listamodelos[[i]])[18]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.y.c2,Tmax_peninsula_geo[,i+3])
+correlaciones
+
+modelo.cof.y.c2 <- lm(cof.y.c2 ~ LAT+log(HGHT)+LON , data= Tmax_peninsula_geo)
+summary(modelo.cof.y.c2)
+resettest(modelo.cof.y.c2)
+mean(cof.y.c2)/sd(cof.y.c2)
+
+nombre[17] <- 'Año C2'
+cv[17] <- mean(cof.y.c2)/sd(cof.y.c2)
+Rcuadrado[17]<-0.04236   
+Rcuadrado.geo[17]<-0.04236  
+pval[17] <- sum(valores_p[18,]>0.05)
+
+##PROBLEMAS EN ESTOS 2
+
+cof.y.s1 <- NULL
+for(i in c(1:54)) cof.y.s1[i] <- coefficients(listamodelos[[i]])[19]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.y.s1,Tmax_peninsula_geo[,i+3])
+correlaciones
+
+modelo.cof.y.s1 <- lm(cof.y.s1 ~ log(HGHT)+poly(LON,3) , data= Tmax_peninsula_geo)
+summary(modelo.cof.y.s1)
+resettest(modelo.cof.y.s1)
+
+nombre[18] <- 'Año S1'
+cv[18] <- mean(cof.y.s1)/sd(cof.y.s1)
+Rcuadrado[18]<- 0.2207  
+Rcuadrado.geo[18]<- 0.2207 
+pval[18] <- sum(valores_p[19,]>0.05)
+
+####Le da igual la temperatura
+
+mean(cof.y.s1)/sd(cof.y.s1)
+#####
+
+cof.y.s2 <- NULL
+for(i in c(1:54)) cof.y.s2[i] <- coefficients(listamodelos[[i]])[20]
+for(i in c(1:7)) correlaciones[i] <-cor(cof.y.s2,Tmax_peninsula_geo[,i+3])
+correlaciones
+
+modelo.cof.y.s2 <- lm(cof.y.s2 ~ log(HGHT)+poly(LON,3)[,c(2,3)]  , data= Tmax_peninsula_geo)
+summary(modelo.cof.y.s2)
+resettest(modelo.cof.y.s2)
+
+
+modelo.cof.y.s2.2 <- lm(cof.y.s2 ~ log(HGHT)+poly(LON,3)[,c(2,3)]+ Qver   , data= Tmax_peninsula_geo)
+summary(modelo.cof.y.s2.2)
+resettest(modelo.cof.y.s2.2)
+mean(cof.y.s2)/sd(cof.y.s2)
+
+
+nombre[19] <- 'Año S2'
+cv[19] <- mean(cof.y.s2)/sd(cof.y.s2)
+Rcuadrado[19]<- 0.3253  
+Rcuadrado.geo[19]<- 0.2272
+pval[19] <- sum(valores_p[20,]>0.05)
+
+
+summary(listamodelos[[1]])
+
+data.modelos <- data.frame(Nombre=nombre,Rcuadrado.geo = Rcuadrado.geo, Rcuadrado=Rcuadrado,Medida=cv,No.Rechazo.Hip=pval,RESTA = Rcuadrado - Rcuadrado.geo )
+####
+
+modelo.random <- lm(Rcuadrado~No.Rechazo.Hip,data=data.modelos)
+summary(modelo.random)
+resettest(modelo.random)
+
+plot(Rcuadrado~Rcuadrado.geo,data=data.modelos)
+lines(Rcuadrado.geo,Rcuadrado.geo,data=data.modelos)
+
+
+
