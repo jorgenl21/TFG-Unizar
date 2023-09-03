@@ -1,0 +1,23 @@
+TX1 <- (Tmax_peninsula[,20])[Tmax_peninsula$year <= 2022]
+n <- length(TX1)
+aux.ant <- c(NA,TX1[c(1:(n-1))])
+aux.dos.ant <- c(NA,NA,TX1[c(1:(n-2))])
+aux.year <- Tmax_peninsula$year[c(1:n)]
+aux.s1 <- S1 [c(1:24837)]
+aux.s2 <- S2[c(1:n)]
+aux.c1 <- C1[c(1:n)]
+aux.c2<- C2[c(1:n)]
+
+f1 <- list(TX1 ~ aux.ant*(aux.s1+aux.s2+aux.c1+aux.c2)+aux.dos.ant*(aux.s1+aux.s2+aux.c1+aux.c2)+aux.year*(aux.s1+aux.s2+aux.c1+aux.c2),
+           sigma ~ aux.ant*(aux.s1+aux.s2+aux.c1+aux.c2)+aux.dos.ant*(aux.s1+aux.s2+aux.c1+aux.c2)+aux.year*(aux.s1+aux.s2+aux.c1+aux.c2))
+library(bamlss)
+bam1<-bamlss(f1,family="gaussian",light=T)
+summary(bam1) # aux.ant, aux.c2, aux.dos.ant, aux.year, aux.ant:aux.c1, aux.ant:aux.c2, aux.c2:aux.year
+
+f2 <- list(TX1 ~ aux.ant*(aux.s1+aux.s2+aux.c1+aux.c2)+aux.dos.ant*(aux.s1+aux.s2+aux.c1+aux.c2)+aux.year*(aux.s1+aux.s2+aux.c1+aux.c2),
+           sigma ~ aux.ant*(aux.s1+aux.s2+aux.c1+aux.c2)+aux.dos.ant+aux.year*(aux.s1+aux.s2+aux.c1+aux.c2))
+bam2<-bamlss(f2,family="gaussian",light=T)
+summary(bam2)
+DIC(bam2,bam1)
+
+#El bam2 tiene el DIC más pequeño, luego es mejor
