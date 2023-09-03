@@ -1,0 +1,152 @@
+##### gráficos latex
+
+length(Tmax_peninsula_geo$LAT)
+medias.verano <- NULL
+for (i in c(1:54)) medias.verano[i] <- mean((Tmax_peninsula[,2+2*i])[Tmax_peninsula$month%in%c(6,7,8)&Tmax_peninsula$year>=1992])
+medias.invierno <- NULL
+for (i in c(1:54)) medias.invierno[i] <- mean((Tmax_peninsula[,2+2*i])[Tmax_peninsula$month%in%c(12,1,2)&Tmax_peninsula$year>=1992])
+
+
+(Tmax_peninsula[,2+2*i])[Tmax_peninsula$month%in%c(6,7,8)&Tmax_peninsula$year>=1992]
+
+boxplot(medias.verano, ylim=c(0,36))
+boxplot(medias.invierno, ylim=c(0,36))
+
+
+media1 <-tapply(Tmax_peninsula$TX.229[Tmax_peninsula$year>=1992],Tmax_peninsula$month[Tmax_peninsula$year>=1992],mean,na.rm=TRUE)
+media2 <- tapply(Tmax_peninsula$TX.231[Tmax_peninsula$year>=1992],Tmax_peninsula$month[Tmax_peninsula$year>=1992],mean,na.rm=TRUE)               
+media3 <- tapply(Tmax_peninsula$TX.234[Tmax_peninsula$year>=1992],Tmax_peninsula$month[Tmax_peninsula$year>=1992],mean,na.rm=TRUE)
+
+plot(media1, col="red",pch=16,ylim=c(10,36),ylab="Temperatura máxima media",xlab="Mes")
+points(media2, col="green", pch=16)
+points(media3, col="blue", pch=16)
+
+legend("topright", legend=c("Badajoz", "Málaga", "San Sebastián"), col=c("red", "green", "blue"), lty=1)
+
+año.plot <- Tmax_peninsula$year + (Tmax_peninsula$day.year-1)/365
+año.plot.5 <- año.plot[Tmax_peninsula$year<=2022 & Tmax_peninsula$year>=2018]
+plot(año.plot.5,Tmax_peninsula$TX.229[Tmax_peninsula$year<=2022 & Tmax_peninsula$year>=2018],pch=16,col="red",ylim=c(0,50),ylab="Temperatura máxima observada",xlab="Fecha")
+points(año.plot.5,Tmax_peninsula$TX.231[Tmax_peninsula$year<=2022 & Tmax_peninsula$year>=2018],pch=16,col="green")
+points(año.plot.5,Tmax_peninsula$TX.234[Tmax_peninsula$year<=2022 & Tmax_peninsula$year>=2018],pch=16,col="blue")
+legend("topright", legend=c("Badajoz", "Málaga", "San Sebastián"), col=c("red", "green", "blue"), pch=16)
+
+boxplot(cof.year,cex.axis=3,pch=16, cex=2)
+
+install.packages('quantile')
+library(quantile)
+library(zoo)
+
+cuantil.90 <- rollapply(Tmax_peninsula$TX.234, width = 30, FUN = function(x) quantile(x, 0.9,na.rm=TRUE), align = "right", fill = NA)
+cuantil.10 <- rollapply(Tmax_peninsula$TX.234, width = 30, FUN = function(x) quantile(x, 0.1,na.rm=TRUE), align = "right", fill = NA)
+cuantil.50 <- rollapply(Tmax_peninsula$TX.234, width = 30, FUN = function(x) quantile(x, 0.5,na.rm=TRUE), align = "right", fill = NA)
+vv <- tapply(cuantil.90[Tmax_peninsula$year<=1966],Tmax_peninsula$day.year[Tmax_peninsula$year<=1966],mean,na.rm=TRUE)
+v2  <- tapply(cuantil.90[Tmax_peninsula$year>=2011],Tmax_peninsula$day.year[Tmax_peninsula$year>=2011],mean,na.rm=TRUE)
+bv <- tapply(cuantil.10[Tmax_peninsula$year<=1966],Tmax_peninsula$day.year[Tmax_peninsula$year<=1966],mean,na.rm=TRUE)
+b2  <- tapply(cuantil.10[Tmax_peninsula$year>=2011],Tmax_peninsula$day.year[Tmax_peninsula$year>=2011],mean,na.rm=TRUE) 
+cv <- tapply(cuantil.50[Tmax_peninsula$year<=1966],Tmax_peninsula$day.year[Tmax_peninsula$year<=1966],mean,na.rm=TRUE)
+c2  <- tapply(cuantil.50[Tmax_peninsula$year>=2011],Tmax_peninsula$day.year[Tmax_peninsula$year>=2011],mean,na.rm=TRUE) 
+
+plot(v2-vv,ylab='Diferencia últimos 12 años menos primeros 12 años', xlab='Día del año',col="red",pch=16)
+abline(h=0)
+points(b2-bv,col="green",pch=16)
+points(c2-cv,col="blue",pch=16)
+legend("topright", legend=c("Cuantil 0.9", "Cuantil 0.1", "Mediana"), col=c("red", "green", "blue"), pch=16)
+
+
+
+
+
+
+
+mean(cof.ant)
+install.packages("fields")
+library(maps)
+library(fields)
+cof.yea
+max(r.squareds)
+quantile(r.squareds,0.5)
+colores <- colorRampPalette(c("blue", "white", "red"))(length(cof.year))
+colores_datos <- colores[rank(10*cof.var.year)]
+map('world', xlim=c(-10,5), ylim=c(35.8,43.7), interior=F)
+abline(h=c(35:45), v=c(-10:10), lty=3)
+points(Tmax_peninsula_geo$LON,Tmax_peninsula_geo$LAT,pch=21,bg=colores_datos,col=rep("black",length(r.squareds)))
+legend("bottomright", legend=round(range(10*cof.var.year), 2), fill=colorRampPalette(c("blue", "white", "red"))(2), title="10*Cof.Var.Year", horiz=TRUE)
+image.plot(legend.only=TRUE, col=colorRampPalette(c("blue", "white", "red"))(100), limits=range(10*cof.var.year), horizontal=TRUE, smallplot=c(0.1, 0.9, 0.12, 0.14))
+legend("topright", legend=c(10*round(min(cof.var.year),3),10*round(quantile(cof.var.year,0.5),3),10*round(max(cof.var.year),3)),pt.bg=c("blue", "white", "red"), col = "black", pch=21)
+
+summary(lm(cof.var.year ~  LAT+ HGHT  * LON,data=Tmax_peninsula_geo))
+library(lmtest)
+resettest(lm(cof.var.year ~ HGHT  + LAT + LON,data=Tmax_peninsula_geo))
+boxplot(10*cof.year,cex=2,cex.axis=2,pch=16)
+
+library(maps)
+
+
+colores <- colorRampPalette(c("blue", "white", "red"))(100)
+colores_datos <- colores[cut(cof.2ant, breaks = 100, labels = FALSE)]
+
+# Dibujar mapa
+map('world', xlim = c(-10, 5), ylim = c(35.8, 43.7), interior = FALSE)
+abline(h = c(35:45), v = c(-10:10), lty = 3)
+points(Tmax_peninsula_geo$LON, Tmax_peninsula_geo$LAT, pch = 21, bg = colores_datos, col = "black", cex=2)
+
+
+plot(log(Tmax_peninsula_geo$HGHT), cof.ant,xlab="log(altitud)", ylab ="Coeficiente día anterior",cex=2, cex.axis=2, cex.lab=1.5,pch=16)
+
+
+color.bar <- function(lim, col = heat.colors(12), ...) {
+  # lim es un vector con los limites del gráfico en la forma c(x1, x2, y1, y2)
+  # col es la paleta de colores
+  # ... son argumentos adicionales para la función rect
+  n <- length(col)
+  for (i in 1:n) {
+    rect(lim[1], lim[3] + (i - 1) * diff(lim[3:4]) / n, lim[2], lim[3] + i * diff(lim[3:4]) / n, col = col[i], ...)
+  }
+}
+
+lim <- c(3, 4, 37, 40)
+color.bar(lim, colores, border = NA)
+axis(2, at = seq(lim[3], lim[4], length.out = 2), labels = c(round(min(cof.2ant),3), round(max(cof.2ant),3)), pos = lim[1],cex.axis=1.5)
+
+
+par(mfrow = c(1, 1))
+library(bamlss)
+marzo.21 <- samples(bam2)[,8]+S1[80]*samples(bam2)[,17] + S2[80]*samples(bam2)[,18] + C1[80]*samples(bam2)[,19] + C2[80]*samples(bam2)[,20]
+hist(marzo.21,xlim=c(0.004, 0.026),main="Distribución pendiente anual 21 de marzo") #0.004 a 0.016
+junio.21 <- samples(bam2)[,8]+S1[172]*samples(bam2)[,17] + S2[172]*samples(bam2)[,18] + C1[172]*samples(bam2)[,19] + C2[172]*samples(bam2)[,20]
+hist(junio.21,xlim=c(0.004, 0.026),main="Distribución pendiente anual 21 de junio") #0.014 a 0.026
+septiembre.21 <- samples(bam2)[,8]+S1[264]*samples(bam2)[,17] + S2[264]*samples(bam2)[,18] + C1[264]*samples(bam2)[,19] + C2[264]*samples(bam2)[,20]
+hist(septiembre.21,xlim=c(0.004, 0.026),main="Distribución pendiente anual 21 de septiembre") #0.010 a 0.020
+diciembre.21 <- samples(bam2)[,8]+S1[355]*samples(bam2)[,17] + S2[355]*samples(bam2)[,18] + C1[355]*samples(bam2)[,19] + C2[355]*samples(bam2)[,20]
+hist(diciembre.21,xlim=c(0.004, 0.026),main="Distribución pendiente anual 21 de diciembre") #0.004 a 0.016
+quantile(septiembre.21,0.5)
+sum(marzo.21<=0)
+
+library(bamlss)
+marzo.21 <- samples(bam2)[,31]+S1[80]*samples(bam2)[,36] + S2[80]*samples(bam2)[,37] + C1[80]*samples(bam2)[,38] + C2[80]*samples(bam2)[,39]
+hist(marzo.21,main="Distribución pendiente anual 21 de marzo",xlim=c(-0.003,0.002)) #-0.001 a 0.002
+junio.21 <- samples(bam2)[,31]+S1[172]*samples(bam2)[,36] + S2[172]*samples(bam2)[,37] + C1[172]*samples(bam2)[,38] + C2[172]*samples(bam2)[,39]
+hist(junio.21,main="Distribución pendiente anual 21 de junio",xlim=c(-0.003,0.002)) #-0.003 a 0
+septiembre.21 <- samples(bam2)[,31]+S1[264]*samples(bam2)[,36] + S2[264]*samples(bam2)[,37] + C1[264]*samples(bam2)[,38] + C2[264]*samples(bam2)[,39]
+hist(septiembre.21,main="Distribución pendiente anual 21 de septiembre",xlim=c(-0.003,0.002)) #-0.003 a 0.001
+diciembre.21 <- samples(bam2)[,31]+S1[355]*samples(bam2)[,36] + S2[355]*samples(bam2)[,37] + C1[355]*samples(bam2)[,38] + C2[355]*samples(bam2)[,39]
+hist(diciembre.21,main="Distribución pendiente anual 21 de diciembre",xlim=c(-0.003,0.002)) #-0.002 a 0.001
+
+
+
+
+
+# Instalar y cargar las librerías necesarias
+# install.packages("dplyr")
+library(dplyr)
+
+# Crear el dataframe
+desept <- data.frame(
+  Coeficiente = c('Intercepto', 'Día anterior', 's1', 's2', 'c1', 'c2', 'Dos días atrás', 'Año', 'Día anterior s1', 'Día anterior s2', 'Día anterior c1', 'Día anterior c2', 'Dos días atrás s1', 'Dos días atrás s2', 'Dos días atrás c1', 'Dos días atrás c2', 'Año s1', 'Año s2', 'Año c1', 'Año c2'),
+  Exploratorio = c(-19.9585, 0.7041, 2.2998, 2.0050, 7.6313, -3.3645, -0.0460, 0.0137, 0.0241, 0.0167, -0.0298, 0.0128, 0.0173, -0.0256, 0.0580, -0.0053, -0.0021, -0.0005, -0.0059, 0.0016),
+  MediaPosteriori = c(-20.0494, 0.7021, 2.2687, 2.0684, 6.6055, -2.7769, -0.0403, 0.0137, 0.0201, 0.0203, -0.0299, 0.0140, 0.0164, -0.0271, 0.0535, -0.0051, -0.0020, -0.0006, -0.0053, 0.0013),
+  IC95_inferior = c(-23.7468, 0.6903, -2.6578, -2.8897, 1.7629, -7.7736, -0.0523, 0.0118, 0.0037, 0.0044, -0.0466, -0.0025, -0.0006, -0.0423, 0.0373, -0.0209, -0.0047, -0.003, -0.0079, -0.0013),
+  IC95_superior = c(-16.3505, 0.7146, 7.4676, 6.9039, 11.826, 2.3065, -0.0285, 0.0156, 0.0376, 0.0363, -0.0132, 0.0297, 0.0323, -0.0118, 0.0694, 0.0105, 0.0005, 0.002, -0.0028, 0.0038)
+)
+
+plot(desept$Exploratorio, desept$MediaPosteriori, xlab="Lm", ylab= "Bamlss", cex=3, cex.lab=3, cex.axis=2,pch=16)
