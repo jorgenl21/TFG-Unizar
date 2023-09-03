@@ -1,0 +1,41 @@
+#Construccion modelos para la varianza
+aux <- seq(4,110,by=2)
+par(mfrow=c(1,1))
+listamodelosvar <- list()
+Rs <- NULL
+for(ipueblo in aux){ 
+  n <- 24837
+  aux.y<- (Tmax_peninsula[,ipueblo])[c(1:24837)]
+  aux.y.lag1 <- c(NA,aux.y[c(1:24836)]) 
+  aux.y.lag2 <- c(NA,aux.y.lag1[c(1:24836)])
+  aux.s1 <- S1 [c(1:24837)]
+  aux.s2 <- S2[c(1:n)]
+  aux.c1 <- C1[c(1:n)]
+  aux.c2<- C2[c(1:n)]
+  aux.c3<- C3[c(1:n)]
+  aux.c4<- C4[c(1:n)]
+  aux.s3<- S3[c(1:n)]
+  aux.s4<- S4[c(1:n)]
+
+  
+  
+
+ 
+  
+  
+  aux.year <- Tmax_peninsula$year[c(1:n)]
+
+  aux.dataframe <- data.frame(aux.y.lag1, aux.y.lag2, aux.s1, aux.s2, aux.c1, aux.c2, aux.year)
+  
+  aux.residuo <- aux.y - predict(listamodelos[[(1/2)*ipueblo - 1]],newdata=data.frame(aux.y.lag1, aux.y.lag2, aux.s1, aux.s2, aux.c1, aux.c2, aux.year))
+  (formula(summary(listamodelos[[1]])))[3]
+  aux.var <- NULL
+  aux.tx <- c(NA,NA,NA,aux.y)
+  for (j in c(1:n)) aux.var[j] <- var(aux.tx[c(j:(j+2))],na.rm=TRUE)
+  
+  
+  aux.lm.var <- lm(I(log(aux.residuo^2)) ~  aux.var +  (aux.y.lag1 +I(aux.y.lag1^2))* (aux.c1 + aux.c2 + aux.s1 + aux.s2) + aux.y.lag1*(aux.y.lag2 )* (aux.c1 + aux.c2 + aux.s1 + aux.s2 ) + aux.year * (aux.c1 + aux.c2 + aux.s1 + aux.s2  ))
+  listamodelosvar[[(1/2)*ipueblo - 1]] <- aux.lm.var
+  Rs[(1/2)*ipueblo - 1] <- summary(listamodelosvar[[(1/2)*ipueblo - 1]])$adj.r.squared
+  
+}
